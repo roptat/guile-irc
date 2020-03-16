@@ -32,7 +32,7 @@
 (define-error error-type 'irc:tagged-hook:add)
 
 (define-record-type <tagged-hook>
-  (make-tagged-hook alist)
+  (make-tagged-hook* alist)
   tagged-hook?
   (alist alist set-alist!))
 
@@ -43,7 +43,7 @@
 
 (define (make-tagged-hook)
   "Create a new tagged-hook."
-  (make-tagged-hook '()))
+  (make-tagged-hook* '()))
 
 (define (tagged-hook-empty? hook)
   "Return #t if hook @var{hook} is empty, #f otherwise."
