@@ -1,7 +1,7 @@
 include guile.am
 
-moddir=$(prefix)/share/guile/site/2.0
-godir=$(libdir)/guile/2.0/site-ccache
+moddir=$(prefix)/share/guile/site/$(GUILE_EFFECTIVE_VERSION)
+godir=$(libdir)/guile/$(GUILE_EFFECTIVE_VERSION)/site-ccache
 
 SOURCES = \
 	irc/channel.scm \
