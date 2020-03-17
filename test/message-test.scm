@@ -1,6 +1,3 @@
-#! /usr/bin/guile -s
-!#
-
 ;; Copyright (C) 2012 bas smit (fbs)
 
 ;; This program is free software; you can redistribute it and/or
@@ -17,92 +14,63 @@
 ;; along with this program; if not, write to the Free Software
 ;; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-;(add-to-load-path "/home/bas/projects/programming/lib-guile/")
+(use-modules (srfi srfi-64))
+(use-modules ((irc message) #:prefix msg:))
 
-(use-modules ((irc message)
-	      #:renamer (symbol-prefix-proc 'msg:)))
+(test-begin "message")
 
-(define make-error
-  (lambda (expr msg)
-    (cons expr msg)))
+(let ((m (msg:parse-message-string ":server.org NOTICE Auth :*** Looking !")))
+  (test-assert "test 1: prefix"
+    (string=? (msg:prefix m) "server.org"))
+  (test-assert "test 1: command"
+    (eq? (msg:command m) (string->symbol "NOTICE")))
+  (test-assert "test 1: timestamp"
+    (number? (msg:time m)))
+  (test-assert "test 1: middle"
+    (string=? (msg:middle m) "Auth"))
+  (test-assert "test 1: tail"
+    (string=? (msg:trailing m) "*** Looking !")))
 
-(define error-expression car)
-(define error-message cdr)
+(let ((m (msg:parse-message-string ":moorcock.freenode.net 001 foeps :Welcome !@#$%^&*()-=_+[]{};';\",./<>?")))
+  (test-assert "test 2: valid characters: prefix"
+    (string=? (msg:prefix m) "moorcock.freenode.net"))
+  (test-assert "test 2: valid characters: command"
+    (= (msg:command m) 1))
+  (test-assert "test 2: valid characters: timestamp"
+    (number? (msg:time m)))
+  (test-assert "test 2: valid characters: timestamp 2"
+    (<= (msg:time m) (current-time)))
+  (test-assert "test 2: valid characters: middle"
+    (string=? (msg:middle m) "foeps"))
+  (test-assert "test 2: valid characters: tail"
+    (string=? (msg:trailing m) "Welcome !@#$%^&*()-=_+[]{};';\",./<>?")))
 
-(define (print . x)
-  (if (not (list? x))
-      (newline)
-      (for-each (lambda (y) (begin (display y) (newline))) x)))
-
-(define-syntax expect
-  (syntax-rules ()
-    ((_ fn e msg)
-     (if (not (fn e))
-	 (throw 'error (make-error (list (quote fn) e) msg))))
-    ((_ fn e1 e2 msg)
-     (if (not (fn e1 e2))
-	 (throw 'error (make-error (list (quote fn) e1 e2) msg))))))
-
-(define-syntax test
-  (syntax-rules ()
-    ((_ fn e msg)
-     (if (fn e)
-	 (format #t "good: ~a\n" msg)
-	 (format #t "bad:  ~a\n" msg)))
-    ((_ fn e1 e2 msg)
-     (if (fn e1 e2)
-	 (format #t "good: ~a\n" msg)
-	 (format #t "bad:  ~a\n" msg)))))
-
-;; This sucks
-
-(print  "Running test 1")
-(let ([m (msg:parse-message-string ":server.org NOTICE Auth :*** Looking !")])
-  (test string=? (msg:prefix m) "server.org" "prefix test")
-  (test eq? (msg:command m) (string->symbol "NOTICE") "command test")
-  (test number? (msg:time m) "timestamp test")
-  (test string=? (msg:middle m) "Auth" "middle test")
-  (test string=? (msg:trailing m) "*** Looking !" "tail test"))
-
-(print "Running test 2, valid characters")
-(let ([m (msg:parse-message-string ":moorcock.freenode.net 001 foeps :Welcome !@#$%^&*()-=_+[]{};';\",./<>?")])
-  (test string=? (msg:prefix m) "moorcock.freenode.net" "prefix test")
-  (test = (msg:command m) 1 "command test")
-  (test number? (msg:time m) "timestamp test")
-  (test <= (msg:time m) (current-time) "timestamp test")
-  (test string=? (msg:middle m) "foeps" "middle test")
-  (test string=? (msg:trailing m) "Welcome !@#$%^&*()-=_+[]{};';\",./<>?" "tail test")
-  )
-
-(print "Running test 3, message without prefix")
 (let ([m (msg:parse-message-string "PING :irc.baslab.org")])
-  (test string=? "irc.baslab.org" (msg:parse-source m) "Message source.")
-  (test string=? "irc.baslab.org" (msg:parse-target m) "Message target.")
-  (test eq? 'PING (msg:command m) "Message command.")
-  (test eq? #f (msg:middle m) "Message middle."))
+  (test-assert "test 3: message without prefix: message source"
+    (string=? "irc.baslab.org" (msg:parse-source m)))
+  (test-assert "test 3: message without prefix: message target"
+    (string=? "irc.baslab.org" (msg:parse-target m)))
+  (test-assert "test 3: message without prefix: command"
+    (eq? 'PING (msg:command m)))
+  (test-assert "test 3: message without prefix: middle"
+    (eq? #f (msg:middle m))))
 
-(print "Running test 4, mode")
 (let ([m (msg:parse-message-string ":fubs!fubs@127.0.0.1 MODE #test +o bas")])
   (let ([prefix (msg:prefix m)])
-    (test string=? (car prefix) "fubs" "nick")
-    (test string=? (cadr prefix) "fubs" "user")
-    (test string=? (caddr prefix) "127.0.0.1" "hostname"))
-  (test eq? 'MODE (msg:command m) "Message command.")
+    (test-assert "test 4: mode: nick"
+      (string=? (car prefix) "fubs"))
+    (test-assert "test 4: mode: user"
+      (string=? (cadr prefix) "fubs"))
+    (test-assert "test 4: mode: hostname"
+      (string=? (caddr prefix) "127.0.0.1")))
+  (test-assert "test 4: mode: message command"
+    (eq? 'MODE (msg:command m)))
   (let ([middle (msg:middle m)])
-    (test string=? (car middle) "#test" "middle command 1")
-    (test string=? (cadr middle) "+o" "middle command 2")
-    (test string=? (caddr middle) "bas" "middle command 3")))
+    (test-assert "test 4: mode: middle command 1"
+      (string=? (car middle) "#test"))
+    (test-assert "test 4: mode: middle command 2"
+      (string=? (cadr middle) "+o"))
+    (test-assert "test 4: mode: middle command 3"
+      (string=? (caddr middle) "bas"))))
 
-(print "Running test 5, ctcp")
-
-
-(define str1 ":moorcock.freenode.net NOTICE * :*** Looking up your hostname...")
-(define str2 ":moorcock.freenode.net 003 foeps :This server was created Tue Feb 7 2012 at 15:05:50 CST")
-(define str3 ":irc.baslab.bas 366 fubs #test :End of /NAMES list.")
-(define str4 ":bas!bas@127.0.0.1 JOIN :#test")
-(define str5 ":bas!bas@127.0.0.1 PRIVMSG #test :hello world")
-(define str6 ":bas!bas@127.0.0.1 NOTICE #test :hello")
-(define str7 ":bas!bas@127.0.0.1 PRIVMSG fubs :VERSION")
-(define str8 )
-(define str9 ":bas!bas@127.0.0.1 MODE #test +v fubs")
-(define str10 ":bas!bas@127.0.0.1 KICK #test fubs :")
+(test-end "message")

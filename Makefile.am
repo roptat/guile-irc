@@ -21,7 +21,19 @@ endif
 
 info_TEXINFOS = doc/api.texi
 
-TESTS = \
+TEST_EXTENSIONS = .scm
+SCM_TESTS = \
 	test/message-test.scm
-TESTS_ENVIRONMENT = $(GUILE) --no-auto-compile
+
+TESTS = $(SCM_TESTS)
+
+AM_TESTS_ENVIRONMENT = abs_top_srcdir="$(abs_top_srcdir)" GUILE_AUTO_COMPILE=0
+
+SCM_LOG_DRIVER =                                          \
+  $(top_builddir)/env                                     \
+  $(GUILE) --no-auto-compile -e main                      \
+      $(top_srcdir)/build-aux/test-driver.scm
+
+AM_SCM_LOG_DRIVER_FLAGS = --brief=yes
+
 EXTRA_DIST += $(TESTS) $(info_TEXINFOS)
