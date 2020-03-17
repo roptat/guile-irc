@@ -36,7 +36,7 @@ An irc library for [GNU guile](http://www.gnu.org/software/guile/).
 (do-join irc "#test")
 ```
    
-6. Let the `bot' do his job.
+6. Let the `bot' do its job.
 ```scheme
 (do-runloop irc)
 ```
