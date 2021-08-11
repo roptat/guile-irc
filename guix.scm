@@ -1,2 +1,2 @@
 (specifications->manifest
- '("guile" "gnutls" "autoconf" "automake" "texinfo"))
+ '("guile" "gnutls" "autoconf" "automake" "pkg-config" "texinfo"))

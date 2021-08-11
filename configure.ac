@@ -6,6 +6,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([color-tests -Wall -Wno-portability foreign])
 AM_SILENT_RULES([yes])
 
+GUILE_PKG([3.0 2.2 2.0])
 GUILE_PROGS
 
 if $GUILE_TOOLS | grep -q compile; then
